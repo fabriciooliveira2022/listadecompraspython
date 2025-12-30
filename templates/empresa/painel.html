@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>Cadastro da Empresa</h3>
+
+<form method="POST" enctype="multipart/form-data">
+
+    <div class="mb-3">
+        <label>Nome da Empresa</label>
+        <input type="text" name="nome" class="form-control"
+               value="{{ empresa.nome if empresa else '' }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label>CNPJ</label>
+        <input type="text" name="cnpj" class="form-control"
+               value="{{ empresa.cnpj if empresa else '' }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label>Endereço (não exibido)</label>
+        <input type="text" name="endereco" class="form-control"
+               value="{{ empresa.endereco if empresa else '' }}">
+    </div>
+
+    <div class="mb-3">
+        <label>Telefone (não exibido)</label>
+        <input type="text" name="telefone" class="form-control"
+               value="{{ empresa.telefone if empresa else '' }}">
+    </div>
+
+    <div class="mb-3">
+        <label>Logo da Empresa</label>
+        <input type="file" name="logo" class="form-control">
+    </div>
+
+    {% if empresa and empresa.logo %}
+        <img src="/{{ empresa.logo }}" height="80">
+    {% endif %}
+
+    <button class="btn btn-primary mt-3">Salvar</button>
+</form>
+
+{% endblock %}

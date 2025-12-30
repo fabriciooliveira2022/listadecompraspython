@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>Alterar senha - {{ usuario.nome }}</h3>
+
+<form method="POST">
+    <div class="mb-3">
+        <label>Nova senha</label>
+        <input type="password" name="senha" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label>Confirmar senha</label>
+        <input type="password" name="senha2" class="form-control" required>
+    </div>
+
+    <button class="btn btn-primary">Salvar</button>
+    <a href="{{ url_for('usuarios.usuarios_listar') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+
+{% endblock %}

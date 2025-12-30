@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">📊 Lista de Compras - Dashboard</h2>
+
+<form method="get" class="mb-4">
+    <label class="form-label">Filtrar por mês:</label>
+    <div class="d-flex gap-2" style="max-width: 260px;">
+        <input type="month" name="mes" value="{{ mes_selecionado }}" class="form-control">
+        <button class="btn btn-primary">Filtrar</button>
+    </div>
+</form>
+
+<div class="row text-center mb-4">
+
+    <div class="col-md-3 mb-3">
+        <div class="card shadow h-100 p-3">
+            <h6 class="text-secondary">Compras</h6>
+            <h2 class="fw-bold">{{ total_pedidos }}</h2>
+            <small class="fw-bold text-primary mt-1">realizadas</small>
+        </div>
+    </div>
+
+    <div class="col-md-2 mb-3">
+        <div class="card shadow h-100 p-3">
+            <h6 class="text-secondary">📦 Produtos</h6>
+            <h2 class="fw-bold">{{ total_produtos }}</h2>
+            <small class="fw-bold text-primary mt-1">cadastrados</small>
+        </div>
+    </div>
+
+    <div class="col-md-2 mb-3">
+        <div class="card shadow h-100 p-3">
+            <h6 class="text-secondary">👥 Clientes</h6>
+            <h2 class="fw-bold">{{ total_clientes }}</h2>
+            <small class="fw-bold text-primary mt-1">cadastrados</small>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card shadow h-100 p-3">
+            <h6 class="text-secondary">Compras / Mês</h6>
+            <h3 class="fw-bold text-success">
+                R$ {{ "%.2f"|format(faturamento_mes) }}
+            </h3>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card shadow h-100 p-3">
+            <h6 class="text-secondary">Compra + Barata</h6>
+            <h4 class="fw-bold text-success">
+                R$ {{ "%.2f"|format(compra_mais_barata.valor) }}
+            </h4>
+            <small class="fw-bold text-primary mt-1">{{ compra_mais_barata.mes }}</small>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card shadow h-100 p-3">
+            <h6 class="text-secondary">🏆 Cliente que Mais Compra</h6>
+            <h6 class="fw-bold">{{ cliente_top.nome }}</h6>
+            <small>{{ cliente_top.compras }} compras</small>
+            <h5 class="fw-bold text-primary mt-1">
+                R$ {{ "%.2f"|format(cliente_top.valor) }}
+            </h5>
+        </div>
+    </div>
+
+</div>
+
+<h4 class="mb-3">🔥 Top 5 Produtos Mais Vendidos</h4>
+<div class="row mb-4">
+    {% for nome, quantidade, valor in top_produtos %}
+    <div class="col-md-4 col-lg-2 mb-3">
+        <div class="card shadow p-3 h-100">
+            <h6 class="fw-bold">{{ nome }}</h6>
+            <p class="mb-1">{{ quantidade }} vendidos</p>
+            <p class="mb-0 fw-bold text-success">
+                R$ {{ "%.2f"|format(valor) }}
+            </p>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">Nenhum produto vendido neste período.</p>
+    {% endfor %}
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6 mb-4 text-center">
+        <div class="card shadow p-3">
+            <h5>📦 Produtos</h5>
+            <div class="chart-small">
+            <canvas id="chartDia"></canvas>
+</div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4 text-center">
+        <div class="card shadow p-3">
+            <h5>📆 Pedidos</h5>
+            <canvas id="chartMes"></canvas>
+        </div>
+    </div>
+</div>
+
+<style>
+.chart-small {
+    max-width: 380px;
+    max-height: 380px;
+    margin: auto;
+}
+</style>
+
+<div class="row mt-3">
+    <div class="col-md-6 mb-4 text-center">
+        <div class="card shadow p-3">
+            <h5>💳 Formas de Pagamento</h5>
+            <div class="chart-small">
+            <canvas id="chartPag"></canvas>
+        </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const produtosDia = {{ pedidos_dia|tojson }};
+    if (produtosDia.length) {
+        new Chart(chartDia, {
+            type: "pie",
+            data: {
+                labels: produtosDia.map(p => p[0]),
+                datasets: [{ data: produtosDia.map(p => p[1]) }]
+            }
+        });
+    }
+
+    const pedidosMes = {{ pedidos_mes|tojson }};
+    if (pedidosMes.length) {
+        new Chart(chartMes, {
+            type: "bar",
+            data: {
+                labels: pedidosMes.map(p => p[0]),
+                datasets: [{ data: pedidosMes.map(p => p[1]) }]
+            }
+        });
+    }
+
+    const pagamentos = {{ pagamentos|tojson }};
+    if (pagamentos.length) {
+        new Chart(chartPag, {
+            type: "pie",
+            data: {
+                labels: pagamentos.map(p => p[0]),
+                datasets: [{ data: pagamentos.map(p => p[1]) }]
+            }
+        });
+    }
+
+});
+</script>
+{% endblock %}

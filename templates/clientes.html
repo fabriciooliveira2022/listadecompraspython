@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Clientes</h2>
+
+<a href="{{ url_for('clientes.clientes_novo') }}" class="btn btn-success mb-2">
+    Novo Cliente
+</a>
+
+<a href="{{ url_for('clientes.importar_csv') }}" class="btn btn-outline-dark mb-2">
+    <i class="bi bi-file-earmark-arrow-up"></i>
+    Importar CSV
+</a>
+
+<!-- FILTRO -->
+<form method="get" class="row g-2 mb-2">
+    <div class="col-md-4">
+        <input type="text"
+               name="nome"
+               class="form-control"
+               placeholder="Filtrar por nome"
+               value="{{ filtro_nome }}">
+    </div>
+
+    <div class="col-md-2">
+        <button class="btn btn-primary w-100">
+            Filtrar
+        </button>
+    </div>
+</form>
+
+<!-- CONTADOR -->
+<div class="mb-2 text-muted">
+    Mostrando {{ inicio }}–{{ fim }} de {{ total }} registros
+</div>
+
+{% macro ordenar_coluna(campo, titulo) %}
+<a href="{{ url_for('clientes.clientes_lista',
+                    page=1,
+                    nome=filtro_nome,
+                    ordenar=campo,
+                    direcao='desc' if ordenar==campo and direcao=='asc' else 'asc') }}"
+   class="text-decoration-none text-dark">
+
+    {{ titulo }}
+
+    {% if ordenar == campo %}
+        {% if direcao == 'asc' %}
+            ↑
+        {% else %}
+            ↓
+        {% endif %}
+    {% endif %}
+</a>
+{% endmacro %}
+
+<!-- TABELA -->
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>{{ ordenar_coluna('nome', 'Nome') }}</th>
+            <th>{{ ordenar_coluna('email', 'Email') }}</th>
+            <th>Telefone</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for c in clientes %}
+        <tr>
+            <td>{{ c.nome }}</td>
+            <td>{{ c.email }}</td>
+            <td>{{ c.telefone }}</td>
+            <td>
+                <a href="{{ url_for('clientes.clientes_editar', id=c.id) }}"
+                   class="btn btn-warning btn-sm">
+                    Editar
+                </a>
+
+                <form action="{{ url_for('clientes.clientes_excluir', id=c.id) }}"
+                      method="POST"
+                      style="display:inline;"
+                      onsubmit="return confirm('Deseja realmente excluir este cliente?');">
+                    <button class="btn btn-danger btn-sm">
+                        Excluir
+                    </button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- PAGINAÇÃO -->
+<nav>
+    <ul class="pagination">
+        {% for p in range(1, total_paginas + 1) %}
+        <li class="page-item {% if p == pagina %}active{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('clientes.clientes_lista',
+                                page=p,
+                                nome=filtro_nome,
+                                ordenar=ordenar,
+                                direcao=direcao) }}">
+                {{ p }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</nav>
+
+{% endblock %}

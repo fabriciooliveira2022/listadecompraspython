@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{% if produto %}Editar{% else %}Novo{% endif %} Produto</h2>
+<form method="POST">
+    <input type="text" name="nome" placeholder="Nome" class="form-control mb-2" value="{{ produto.nome if produto else '' }}" required>
+    <input type="number" step="0.01" name="preco" placeholder="Preço" class="form-control mb-2" value="{{ produto.preco if produto else '' }}" required>
+    <button class="btn btn-success">Salvar</button>
+    <a href="{{ url_for('produtos.produtos_lista') }}" class="btn btn-secondary">
+        Voltar
+    </a>
+</form>
+{% endblock %}

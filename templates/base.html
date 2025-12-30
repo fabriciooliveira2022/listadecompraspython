@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Compras</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <style>
+        body { min-height: 100vh; overflow-x: hidden; }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 260px;
+            background: black;
+            color: #fff;
+            min-height: 100vh;
+            position: fixed;
+            padding: 20px;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .sidebar.hidden { transform: translateX(-100%); }
+        .sidebar a { color: #fff; text-decoration: none; padding: 10px 12px; display: block; border-radius: 6px; margin-bottom: 6px; }
+        .sidebar a:hover { background: rgba(255,255,255,0.15); }
+        .sidebar .title { font-size: 20px; font-weight: bold; margin-bottom: 20px; text-align: center; }
+        .user-box { background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+
+        /* ===== CONTEÚDO ===== */
+        .content { margin-left: 260px; padding: 30px; transition: margin-left 0.3s ease; }
+        .content.full { margin-left: 0; }
+        .topbar { margin-bottom: 20px; }
+        #menuArrow { font-size: 1.8rem; margin-right: 6px; vertical-align: middle; }
+
+        body.dark { background: #1e1e1e; color: #eaeaea; }
+        body.dark .card, body.dark .table { background: #2c2c2c !important; color: #eaeaea !important; }
+        body.dark .sidebar { background: #121212; }
+        body.dark .sidebar a:hover { background: #333; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .content { margin-left: 0; }
+        }
+    </style>
+</head>
+
+<body>
+
+{% set permissoes = session.get("permissoes", {}) %}
+{% set admin = session.get("perfil") == 1 %}
+{% set telas = session.get("telas", []) %}
+
+{% if session.get("user_id") %}
+
+<nav class="navbar navbar-dark bg-dark px-3">
+    <div class="d-flex align-items-center">
+        {% if empresa_logo %}
+            <img src="/{{ empresa_logo }}" height="40" class="me-2">
+        {% endif %}
+        <span class="text-white fw-bold">
+            {{ empresa_nome }} | CNPJ {{ empresa_cnpj }}
+        </span>
+    </div>
+</nav>
+
+<!-- ================= SIDEBAR ================= -->
+<div class="sidebar" id="sidebar">
+
+    <div class="title">📦 Lista de Compras</div>
+
+    <div class="user-box">
+        👤 {{ session.get("user_nome") }}
+        {% if admin %}<br>(Admin){% endif %}
+    </div>
+
+    {% if admin or 'dashboard' in telas %}
+        <a href="{{ url_for('dashboard.dashboard_home') }}">📊 Dashboard</a>
+    {% endif %}
+
+    {% if admin or 'clientes' in telas %}
+        <a href="{{ url_for('clientes.clientes_lista') }}">👥 Clientes</a>
+    {% endif %}
+
+    {% if admin or 'produtos' in telas %}
+        <a href="{{ url_for('produtos.produtos_lista') }}">📦 Produtos</a>
+    {% endif %}
+
+    {% if admin or 'pedidos' in telas %}
+        <a href="{{ url_for('pedidos.pedidos_lista') }}">🧾 Pedidos</a>
+    {% endif %}
+
+    {% if admin or 'usuarios' in telas %}
+        <a href="{{ url_for('usuarios.usuarios_listar') }}">🔐 Usuários</a>
+    {% endif %}
+
+    {% if session.get("perfil_id") == 1 %}
+    <a class="nav-link" href="{{ url_for('empresa.painel_empresa') }}">
+        <i class="bi bi-building me-2"></i> Empresa
+    </a>
+    
+    {% endif %}
+
+    <hr>
+
+    <a href="{{ url_for('usuarios.alterar_senha_usuario') }}">🔑 Alterar Senha</a>
+    <a href="{{ url_for('usuarios.logout') }}" class="text-danger">🚪 Sair</a>
+
+    <hr>
+
+    <button id="toggleTheme" class="btn btn-outline-light w-100">
+        🌞 Tema Claro
+    </button>
+</div>
+{% endif %}
+
+<!-- ================= CONTEÚDO ================= -->
+<div class="content" id="content">
+
+    {% if session.get("user_id") %}
+    <div class="topbar">
+        <button id="toggleSidebar" class="btn btn-outline-secondary">
+            <span id="menuArrow">⬅</span> Menu
+        </button>
+    </div>
+    {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" aria-live="assertive">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</div>
+
+<script>
+    const body = document.body;
+    const sidebar = document.getElementById("sidebar");
+    const content = document.getElementById("content");
+    const btnSidebar = document.getElementById("toggleSidebar");
+    const btnTheme = document.getElementById("toggleTheme");
+    const arrow = document.getElementById("menuArrow");
+
+    // Sidebar toggle
+    if (sidebar && btnSidebar) {
+        const aplicarEstadoSidebar = () => {
+            const estado = localStorage.getItem("sidebar") || "open";
+            sidebar.classList.toggle("hidden", estado === "closed");
+            content.classList.toggle("full", estado === "closed");
+            arrow.textContent = estado === "closed" ? "➡" : "⬅";
+        };
+
+        btnSidebar.addEventListener("click", () => {
+            const fechado = sidebar.classList.toggle("hidden");
+            content.classList.toggle("full");
+            localStorage.setItem("sidebar", fechado ? "closed" : "open");
+            arrow.textContent = fechado ? "➡" : "⬅";
+        });
+
+        aplicarEstadoSidebar();
+    }
+
+    // Tema toggle
+    const aplicarTema = () => {
+        const tema = localStorage.getItem("tema") || "light";
+        body.classList.toggle("dark", tema === "dark");
+        if (btnTheme) {
+            btnTheme.textContent = tema === "dark" ? "🌙 Tema Escuro" : "🌞 Tema Claro";
+        }
+    };
+
+    if (btnTheme) {
+        btnTheme.addEventListener("click", () => {
+            const novoTema = body.classList.contains("dark") ? "light" : "dark";
+            localStorage.setItem("tema", novoTema);
+            aplicarTema();
+        });
+    }
+
+    aplicarTema();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+<!-- ================= RODAPÉ ================= -->
+
+<footer class="text-center mt-5 text-muted">
+    <hr>
+    <small>
+        © <span id="anoAtual"></span> – {{ empresa_nome }} – CNPJ {{ empresa_cnpj }} - Todos os direitos reservados.
+    </small>
+</footer>
+
+<script>
+    document.getElementById("anoAtual").textContent = new Date().getFullYear();
+</script>
+
+</html>

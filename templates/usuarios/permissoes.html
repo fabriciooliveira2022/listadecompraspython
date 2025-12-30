@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3 class="mb-4">Permissões do Usuário: {{ usuario.nome }}</h3>
+
+<form method="post">
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-start">
+                        Tela
+                        <i class="bi bi-grid-fill ms-2 iconeMarcarTodas" title="Marcar/Desmarcar todas linhas" style="cursor:pointer;"></i>
+                    </th>
+                    {% for acao in ["listar","criar","editar","excluir"] %}
+                    <th>{{ acao|capitalize }}
+                        <i class="bi bi-check2-square ms-1 iconeColuna" data-acao="{{ acao }}" title="Marcar/Desmarcar coluna" style="cursor:pointer;"></i>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for tela in telas %}
+                <tr>
+                    <td class="text-start fw-semibold">
+                        {{ tela.nome }}
+                        <i class="bi bi-grid iconeLinha ms-2" data-tela="{{ tela.id }}" title="Marcar/Desmarcar linha" style="cursor:pointer;"></i>
+                    </td>
+
+                    {% for acao in ["listar","criar","editar","excluir"] %}
+                    {% set checked = permissoes.get(tela.id, {}).get(acao, False) %}
+                    <td>
+                        <input type="hidden" name="perm_{{ tela.id }}_{{ acao }}" value="{{ '1' if checked else '0' }}">
+                        <i class="bi icone-permissao {{ 'bi-check-circle-fill text-success' if checked else 'bi-circle text-secondary' }}"
+                           data-tela="{{ tela.id }}" data-acao="{{ acao }}"
+                           style="font-size:1.5rem; cursor:pointer;"></i>
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-3">
+        <button class="btn btn-success">
+            <i class="bi bi-save"></i> Salvar Permissões
+        </button>
+        <a href="{{ url_for('usuarios.usuarios_listar') }}" class="btn btn-secondary">Voltar</a>
+    </div>
+</form>
+
+<style>
+.icone-permissao:hover,
+.iconeColuna:hover,
+.iconeLinha:hover,
+.iconeMarcarTodas:hover {
+    transform: scale(1.2);
+}
+</style>
+
+<script>
+// Alterna ícones individuais
+function toggleIcon(icon) {
+    const tela = icon.dataset.tela;
+    const acao = icon.dataset.acao;
+    const hidden = document.querySelector(`input[name="perm_${tela}_${acao}"]`);
+
+    const isChecked = icon.classList.contains("bi-check-circle-fill");
+
+    if(isChecked){
+        icon.classList.remove("bi-check-circle-fill","text-success");
+        icon.classList.add("bi-circle","text-secondary");
+        hidden.value = "0";
+    } else {
+        icon.classList.remove("bi-circle","text-secondary");
+        icon.classList.add("bi-check-circle-fill","text-success");
+        hidden.value = "1";
+    }
+}
+
+document.querySelectorAll(".icone-permissao").forEach(icon => {
+    icon.addEventListener("click", () => toggleIcon(icon));
+});
+
+// Marcar/desmarcar linha inteira
+document.querySelectorAll(".iconeLinha").forEach(icon => {
+    icon.addEventListener("click", function(){
+        const tela = this.dataset.tela;
+        const icons = document.querySelectorAll(`.icone-permissao[data-tela='${tela}']`);
+        const allChecked = Array.from(icons).every(ic => ic.classList.contains("bi-check-circle-fill"));
+        icons.forEach(ic => {
+            const shouldCheck = !allChecked;
+            const hidden = document.querySelector(`input[name="perm_${ic.dataset.tela}_${ic.dataset.acao}"]`);
+            if(shouldCheck){
+                ic.classList.remove("bi-circle","text-secondary");
+                ic.classList.add("bi-check-circle-fill","text-success");
+                hidden.value = "1";
+            } else {
+                ic.classList.remove("bi-check-circle-fill","text-success");
+                ic.classList.add("bi-circle","text-secondary");
+                hidden.value = "0";
+            }
+        });
+    });
+});
+
+// Marcar/desmarcar coluna inteira
+document.querySelectorAll(".iconeColuna").forEach(icon => {
+    icon.addEventListener("click", function(){
+        const acao = this.dataset.acao;
+        const icons = document.querySelectorAll(`.icone-permissao[data-acao='${acao}']`);
+        const allChecked = Array.from(icons).every(ic => ic.classList.contains("bi-check-circle-fill"));
+        icons.forEach(ic => {
+            const shouldCheck = !allChecked;
+            const hidden = document.querySelector(`input[name="perm_${ic.dataset.tela}_${ic.dataset.acao}"]`);
+            if(shouldCheck){
+                ic.classList.remove("bi-circle","text-secondary");
+                ic.classList.add("bi-check-circle-fill","text-success");
+                hidden.value = "1";
+            } else {
+                ic.classList.remove("bi-check-circle-fill","text-success");
+                ic.classList.add("bi-circle","text-secondary");
+                hidden.value = "0";
+            }
+        });
+    });
+});
+
+// Marcar/desmarcar todas
+document.querySelectorAll(".iconeMarcarTodas").forEach(icon => {
+    icon.addEventListener("click", function(){
+        const icons = document.querySelectorAll(".icone-permissao");
+        const allChecked = Array.from(icons).every(ic => ic.classList.contains("bi-check-circle-fill"));
+        icons.forEach(ic => {
+            const hidden = document.querySelector(`input[name="perm_${ic.dataset.tela}_${ic.dataset.acao}"]`);
+            if(allChecked){
+                ic.classList.remove("bi-check-circle-fill","text-success");
+                ic.classList.add("bi-circle","text-secondary");
+                hidden.value = "0";
+            } else {
+                ic.classList.remove("bi-circle","text-secondary");
+                ic.classList.add("bi-check-circle-fill","text-success");
+                hidden.value = "1";
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

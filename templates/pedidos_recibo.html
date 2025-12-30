@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Recibo Pedido #{{ pedido.id }}</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    max-width: 320px;
+    margin: auto;
+    color: #000;
+}
+
+h2, h4 {
+    text-align: center;
+    margin: 5px 0;
+}
+
+hr {
+    border: 1px dashed #000;
+    margin: 10px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td {
+    padding: 4px 0;
+    font-size: 14px;
+}
+
+.total {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+button {
+    width: 100%;
+    padding: 8px;
+    margin-top: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* ==== IMPRESSÃO ==== */
+@media print {
+    button {
+        display: none;
+    }
+
+    body {
+        margin: 0;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<h2>Lista de Compras</h2>
+<h4>Recibo de Compra</h4>
+
+<hr>
+
+<p>
+Pedido nº <strong>{{ pedido.id }}</strong><br>
+Cliente: {{ pedido.cliente_nome }}<br>
+Data: {{ pedido.data }}<br>
+Pagamento: {{ pedido.pagamento }}
+</p>
+
+<hr>
+
+<table>
+{% for p in produtos %}
+<tr>
+    <td>
+        {{ p.nome }}<br>
+        {{ p.quantidade }} x R$ {{ "%.2f"|format(p.preco) }}
+    </td>
+    <td style="text-align:right">
+        R$ {{ "%.2f"|format(p.subtotal) }}
+    </td>
+</tr>
+{% endfor %}
+</table>
+
+<hr>
+
+<p>Subtotal: R$ {{ "%.2f"|format(pedido.total + pedido.desconto) }}</p>
+<p>Desconto: R$ {{ "%.2f"|format(pedido.desconto) }}</p>
+
+<p class="total">
+Total Pago: R$ {{ "%.2f"|format(pedido.total) }}
+</p>
+
+<hr>
+
+<p style="text-align:center">
+Obrigado pela preferência!
+</p>
+
+<!-- BOTÃO IMPRIMIR -->
+<button onclick="imprimirRecibo()">🖨️ Imprimir Recibo</button>
+
+<script>
+function imprimirRecibo() {
+    window.print();
+}
+</script>
+
+</body>
+</html>

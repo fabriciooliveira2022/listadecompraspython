@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>
+    {{ 'Editar Compra' if pedido else 'Nova Compra' }}
+    {% if pedido %}
+        <small class="text-muted">– Pedido nº {{ pedido.id }}</small>
+    {% endif %}
+</h2>
+
+<form method="POST" id="formPedido">
+
+<!-- ================= CLIENTE ================= -->
+<label>Cliente</label>
+<select name="cliente_id" class="form-control mb-3" required>
+    <option value="">Selecione</option>
+    {% for c in clientes %}
+        <option value="{{ c.id }}"
+            {% if pedido and pedido.cliente_id == c.id %}selected{% endif %}>
+            {{ c.nome }}
+        </option>
+    {% endfor %}
+</select>
+
+<!-- ================= PRODUTOS ================= -->
+<h4>Produtos</h4>
+
+<button type="button" class="btn btn-primary mb-3"
+        data-bs-toggle="modal" data-bs-target="#modalProdutos">
+    ➕ Adicionar Produto
+</button>
+
+<table class="table" id="tabelaProdutos">
+    <thead>
+        <tr>
+            <th>Produto</th>
+            <th style="width:100px">Qtd</th>
+            <th style="width:130px">Valor Unit.</th>
+            <th style="width:130px">Subtotal</th>
+            <th style="width:60px"></th>
+        </tr>
+    </thead>
+    <tbody>
+
+        {% if pedido %}
+            {% for pr in pedido.produtos %}
+            {% set pid = pr.id if pr.id is not none else loop.index0 %}
+            <tr data-id="{{ pid }}">
+                <td>
+                    {{ pr.nome }}
+                    <input type="hidden" name="produto_id[]" value="{{ pid }}">
+                    <input type="hidden" name="nome_{{ pid }}" value="{{ pr.nome }}">
+                </td>
+                <td>
+                    <input type="number" min="1" class="form-control qtd"
+                           name="quantidade_{{ pid }}" value="{{ pr.quantidade }}">
+                </td>
+                <td>
+                    <input type="hidden" name="preco_{{ pid }}" value="{{ pr.preco }}">
+                    <input type="text" class="form-control preco"
+                           value="{{ '%.2f'|format(pr.preco) }}" readonly>
+                </td>
+                <td>
+                    <input type="text" class="form-control subtotal" readonly>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-danger btnRemover">X</button>
+                </td>
+            </tr>
+            {% endfor %}
+        {% endif %}
+
+    </tbody>
+</table>
+
+<!-- ================= TOTAIS ================= -->
+<h5>Total Bruto: R$ <span id="totalGeral">0.00</span></h5>
+<hr>
+
+<!-- ================= DESCONTO ================= -->
+<h5>Desconto</h5>
+
+<div class="row mb-3" style="max-width:600px">
+    <div class="col-md-4">
+        <label>Tipo</label>
+        <select id="tipoDesconto" class="form-control">
+            <option value="">Sem desconto</option>
+            <option value="valor">Valor (R$)</option>
+            <option value="percentual">Percentual (%)</option>
+        </select>
+    </div>
+
+    <div class="col-md-4 d-none" id="campoValor">
+        <label>Valor (R$)</label>
+        <input type="number" step="0.01" min="0"
+               id="descontoValor" class="form-control">
+    </div>
+
+    <div class="col-md-4 d-none" id="campoPercentual">
+        <label>Percentual (%)</label>
+        <input type="number" step="0.01" min="0" max="100"
+               id="descontoPercentual" class="form-control">
+    </div>
+</div>
+
+<input type="hidden" name="desconto" id="descontoFinal">
+
+<h4>Total Final: R$ <span id="totalFinal">0.00</span></h4>
+
+<!-- ================= PAGAMENTO ================= -->
+<label>Pagamento</label>
+<select name="pagamento" class="form-control mb-4" required>
+    <option value="PIX" {% if pedido and pedido.pagamento=='PIX' %}selected{% endif %}>PIX</option>
+    <option value="Cartão" {% if pedido and pedido.pagamento=='Cartão' %}selected{% endif %}>Cartão</option>
+</select>
+
+<button class="btn btn-success">Salvar Pedido</button>
+<a href="{{ url_for('pedidos.pedidos_lista') }}" class="btn btn-secondary">
+        Voltar
+</a>
+</form>
+
+<!-- ================= MODAL PRODUTOS ================= -->
+<div class="modal fade" id="modalProdutos" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Adicionar Produto</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <input type="text" id="buscaProduto"
+               class="form-control mb-3"
+               placeholder="Pesquisar produto...">
+
+        <table class="table table-hover">
+          <thead>
+            <tr><th>Produto</th><th>Preço</th><th></th></tr>
+          </thead>
+          <tbody id="listaProdutosModal">
+            {% for pr in produtos %}
+            <tr data-nome="{{ pr.nome|lower }}">
+              <td>{{ pr.nome }}</td>
+              <td>R$ {{ '%.2f'|format(pr.preco) }}</td>
+              <td>
+                <button type="button"
+                        class="btn btn-success btn-sm"
+                        onclick="adicionarProduto({{ pr.id }}, '{{ pr.nome }}', {{ pr.preco }})">
+                    Adicionar
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById("buscaProduto").addEventListener("keyup", function () {
+    const termo = this.value.toLowerCase();
+    const linhas = document.querySelectorAll("#listaProdutosModal tr");
+
+    linhas.forEach(linha => {
+        const nome = linha.dataset.nome;
+        linha.style.display = nome.includes(termo) ? "" : "none";
+    });
+});
+
+function adicionarProduto(id, nome, preco) {
+    if (document.querySelector(`#tabelaProdutos tr[data-id="${id}"]`)) {
+        alert("Produto já adicionado");
+        return;
+    }
+
+    const tr = document.createElement('tr');
+    tr.dataset.id = id;
+
+    tr.innerHTML = `
+        <td>
+            ${nome}
+            <input type="hidden" name="produto_id[]" value="${id}">
+            <input type="hidden" name="nome_${id}" value="${nome}">
+        </td>
+        <td>
+            <input type="number" min="1" value="1"
+                   class="form-control qtd"
+                   name="quantidade_${id}">
+        </td>
+        <td>
+            <input type="hidden" name="preco_${id}" value="${preco}">
+            <input type="text" class="form-control preco"
+                   value="${preco.toFixed(2)}" readonly>
+        </td>
+        <td>
+            <input type="text" class="form-control subtotal" readonly>
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btnRemover">X</button>
+        </td>
+    `;
+
+    document.querySelector('#tabelaProdutos tbody').appendChild(tr);
+    atualizarTotais();
+}
+
+function atualizarTotais() {
+    let total = 0;
+
+    document.querySelectorAll('#tabelaProdutos tbody tr').forEach(r => {
+        const qtd = parseFloat(r.querySelector('.qtd').value) || 0;
+        const preco = parseFloat(r.querySelector('.preco').value) || 0;
+        const sub = qtd * preco;
+        r.querySelector('.subtotal').value = sub.toFixed(2);
+        total += sub;
+    });
+
+    let desconto = 0;
+    if (tipoDesconto.value === 'valor')
+        desconto = parseFloat(descontoValor.value) || 0;
+
+    if (tipoDesconto.value === 'percentual')
+        desconto = total * ((parseFloat(descontoPercentual.value) || 0) / 100);
+
+    desconto = Math.min(desconto, total);
+
+    descontoFinal.value = desconto.toFixed(2);
+    totalGeral.innerText = total.toFixed(2);
+    totalFinal.innerText = (total - desconto).toFixed(2);
+}
+
+tipoDesconto.onchange = () => {
+    campoValor.classList.toggle('d-none', tipoDesconto.value !== 'valor');
+    campoPercentual.classList.toggle('d-none', tipoDesconto.value !== 'percentual');
+    atualizarTotais();
+};
+
+document.addEventListener('input', e => {
+    if (e.target.classList.contains('qtd') || e.target.id.includes('desconto'))
+        atualizarTotais();
+});
+
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('btnRemover')) {
+        e.target.closest('tr').remove();
+        atualizarTotais();
+    }
+});
+
+// ==== CARREGAR DESCONTO AO EDITAR ====
+document.addEventListener('DOMContentLoaded', () => {
+    {% if pedido %}
+        const tipo = "{{ pedido.tipo_desconto|default('valor') }}";
+        if(tipo === 'valor'){
+            tipoDesconto.value = 'valor';
+            campoValor.classList.remove('d-none');
+            descontoValor.value = "{{ pedido.desconto|default(0) }}";
+        } else if(tipo === 'percentual'){
+            tipoDesconto.value = 'percentual';
+            campoPercentual.classList.remove('d-none');
+            descontoPercentual.value = "{{ pedido.desconto_percentual|default(0) }}";
+        }
+    {% endif %}
+    atualizarTotais();
+});
+</script>
+
+{% endblock %}

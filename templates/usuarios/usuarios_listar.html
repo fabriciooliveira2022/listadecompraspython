@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Usuários</h2>
+
+<a href="{{ url_for('usuarios.usuarios_novo') }}" class="btn btn-success mb-3">
+    Novo Usuário
+</a>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Perfil</th>
+            <th>Status</th>
+            <th width="250">Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in usuarios %}
+        <tr>
+            <td>{{ u[0] }}</td>
+            <td>{{ u[1] }}</td>
+            <td>{{ u[2] }}</td>
+
+            <!-- PERFIL -->
+            <td>
+                {% set perfil = u[4]|int %}
+                {% if perfil == 1 %}
+                    <span class="badge bg-dark">Administrador</span>
+                {% elif perfil == 2 %}
+                    <span class="badge bg-secondary">Usuário</span>
+                {% elif perfil == 3 %}
+                    <span class="badge bg-primary">Usuário Avançado</span>
+                {% endif %}
+            </td>
+
+            <!-- STATUS -->
+            <td>
+                {% set status = u[3]|int %}
+                {% if status == 1 %}
+                    <span class="badge bg-success">Ativo</span>
+                {% else %}
+                    <span class="badge bg-secondary">Inativo</span>
+                {% endif %}
+            </td>
+
+            <!-- AÇÕES -->
+            <td>
+                <!-- EDITAR -->
+                <a href="{{ url_for('usuarios.usuarios_editar', id=u[0]) }}"
+                   class="btn btn-primary btn-sm">
+                   Editar
+                </a>
+
+                <!-- EXCLUIR -->
+                <form action="{{ url_for('usuarios.usuarios_excluir', id=u[0]) }}"
+                      method="post"
+                      style="display:inline;"
+                      onsubmit="return confirm('Deseja realmente excluir este usuário?');">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        Excluir
+                    </button>
+                </form>
+
+                <!-- ALTERAR SENHA -->
+                <a href="{{ url_for('usuarios.alterar_senha_admin', id=u[0]) }}"
+                   class="btn btn-sm btn-warning">
+                   Alterar Senha
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- BOTÃO EXPLICATIVO -->
+<button class="btn btn-outline-info mb-3"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#infoPerfis"
+        aria-expanded="false"
+        aria-controls="infoPerfis">
+    <i class="bi bi-info-circle"></i> Tipos de Usuários
+</button>
+
+<!-- TEXTO DOS PERFIS -->
+<div class="collapse" id="infoPerfis">
+    <div class="card card-body">
+        <ul class="mb-0">
+            <li>
+                <strong>Administrador</strong> – Acesso total ao sistema, incluindo
+                cadastro de usuários, permissões, produtos, clientes e pedidos.
+            </li>
+            <li>
+                <strong>Usuário Avançado</strong> – Acesso a todas as telas do sistema,
+                exceto gerenciamento de usuários e permissões.
+            </li>
+            <li>
+                <strong>Usuário</strong> – Acesso apenas às funcionalidades de pedidos.
+            </li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}

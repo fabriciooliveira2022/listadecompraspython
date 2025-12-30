@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3 class="mb-4">
+    <i class="bi bi-file-earmark-arrow-up"></i>
+    Importar Produtos CSV
+</h3>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <div class="mb-3">
+                <label class="form-label">Arquivo CSV</label>
+                <input type="file" name="arquivo" class="form-control" accept=".csv" required>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>Formato do CSV:</strong><br>
+                <code>nome;preco</code><br>
+            </div>
+
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-upload"></i> Importar
+            </button>
+
+            <a href="{{ url_for('produtos.produtos_lista') }}" class="btn btn-secondary">
+                Voltar
+            </a>
+
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}

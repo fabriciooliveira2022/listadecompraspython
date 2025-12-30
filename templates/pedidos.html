@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* ================= CABEÇALHO IMPRESSÃO (RECIBO) ================= */
+.print-header {
+    display: none; /* só aparece no print */
+    width: 100%;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.print-header .logo img {
+    max-height: 60px;
+}
+
+.print-header .empresa-dados {
+    text-align: right;
+}
+
+.print-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.print-header p {
+    margin: 1px 0;
+    font-size: 12px;
+}
+
+/* ================= TOTAL IMPRESSÃO ================= */
+.print-total {
+    display: none;
+    text-align: right;
+    font-size: 16px;
+    margin: 10px 0;
+    font-weight: bold;
+}
+
+/* ================= ESTILO PARA IMPRESSÃO ================= */
+@media print {
+    nav,
+    .sidebar,
+    form,
+    .not-print,
+    footer,
+    .btn,
+    .actions,
+    .mb-3 {
+        display: none !important; /* oculta menu e sidebar */
+    }
+
+    .print-header {
+        display: flex !important;
+    }
+
+    .print-total {
+        display: block !important;
+    }
+
+    .print-header h2,
+    .print-header p {
+        display: block !important;
+    }
+
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 10px;
+    }
+
+    th, td {
+        border: 1px solid #000 !important;
+        padding: 4px !important;
+        font-size: 12px;
+    }
+
+    body {
+        background: white !important;
+        color: black !important;
+        font-size: 12px;
+    }
+}
+</style>
+
+<!-- ================= CABEÇALHO DA EMPRESA (IMPRESSÃO SOMENTE) ================= -->
+<div class="print-header">
+    <div class="logo">
+        {% if empresa_logo %}
+            <img src="/{{ empresa_logo }}" height="40" class="me-2">
+        {% endif %}
+    </div>
+    <div class="empresa-dados">
+        {% if empresa %}
+            <h2>{{ empresa_nome }}</h2>
+            <p>CNPJ: {{ empresa_cnpj }}</p>
+        {% else %}
+            
+        {% endif %}
+    </div>
+</div>
+
+<h2 class="not-print">Compras</h2>
+
+<!-- ================= BOTÕES ================= -->
+<div class="mb-3 d-flex gap-2 not-print">
+    <a href="{{ url_for('pedidos.pedidos_novo') }}" class="btn btn-success">
+        ➕ Nova Compra
+    </a>
+
+    <a href="{{ url_for('pedidos.pedidos_livre') }}" class="btn btn-outline-primary">
+        📝 Nova Compra Livre
+    </a>
+</div>
+
+<!-- ================= FILTROS ================= -->
+<form method="GET" class="row g-3 mb-3 not-print">
+
+    <div class="col-md-3">
+        <label class="form-label">Data inicial</label>
+        <input type="date" name="data_inicio" class="form-control"
+               value="{{ data_inicio or '' }}">
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Data final</label>
+        <input type="date" name="data_fim" class="form-control"
+               value="{{ data_fim or '' }}">
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Cliente</label>
+        <select name="cliente_id" class="form-select">
+            <option value="">Todos</option>
+            {% for c in clientes %}
+                <option value="{{ c.id }}"
+                    {% if cliente_id and cliente_id|int == c.id %}selected{% endif %}>
+                    {{ c.nome }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Pagamento</label>
+        <select name="pagamento" class="form-select">
+            <option value="">Todos</option>
+            <option value="PIX" {% if pagamento == "PIX" %}selected{% endif %}>PIX</option>
+            <option value="Cartão" {% if pagamento == "Cartão" %}selected{% endif %}>Cartão</option>
+        </select>
+    </div>
+
+    <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">
+            Filtrar
+        </button>
+    </div>
+</form>
+
+<!-- ================= AÇÕES ================= -->
+<div class="mb-3 d-flex gap-2 not-print">
+    <a href="?hoje=1" class="btn btn-warning">
+        Pedidos de Hoje
+    </a>
+
+    <button type="button" class="btn btn-dark" onclick="window.print()">
+        Imprimir
+    </button>
+
+    <button type="button" class="btn btn-success" onclick="exportCSV()">
+        CSV
+    </button>
+</div>
+
+<!-- ================= TOTAL GERAL (TELA) ================= -->
+<h5 class="not-print">
+    Total Geral de Compras:
+    <strong>R$ {{ "%.2f"|format(total_filtrado) }}</strong>
+</h5>
+
+<!-- ================= TOTAL GERAL (IMPRESSÃO) ================= -->
+<div class="print-total">
+    Total Geral de Compras:
+    <strong>R$ {{ "%.2f"|format(total_filtrado) }}</strong>
+</div>
+
+<!-- ================= TABELA ================= -->
+<table class="table table-bordered mt-3">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Data</th>
+            <th>Produtos</th>
+            <th>Total Bruto</th>
+            <th>Desconto</th>
+            <th>Total Final</th>
+            <th>Pagamento</th>
+            <th>Status</th>
+            <th class="not-print">Ações</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% if pedidos %}
+            {% for pedido in pedidos %}
+            <tr>
+                <td>{{ pedido.id }}</td>
+                <td>{{ pedido.cliente_nome }}</td>
+                <td>{{ pedido.data }}</td>
+
+                <td>
+                    <ul class="mb-0">
+                        {% for p in pedido.produtos %}
+                        <li>
+                            {{ p.nome }} —
+                            Qtd: {{ p.quantidade }} —
+                            R$ {{ "%.2f"|format(p.preco) }}
+                            <br>
+                            <small>
+                                Subtotal:
+                                R$ {{ "%.2f"|format(p.quantidade * p.preco) }}
+                            </small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </td>
+
+                <td>R$ {{ "%.2f"|format(pedido.total_bruto) }}</td>
+                <td>R$ {{ "%.2f"|format(pedido.desconto) }}</td>
+                <td><strong>R$ {{ "%.2f"|format(pedido.total) }}</strong></td>
+
+                <td>{{ pedido.pagamento }}</td>
+                <td>{{ pedido.status }}</td>
+
+                <td class="not-print">
+                    <div class="d-flex gap-1 flex-wrap">
+                        <a href="{{ url_for('pedidos.pedidos_recibo', id=pedido.id) }}"
+                           target="_blank"
+                           class="btn btn-sm btn-secondary">
+                            🧾 Recibo
+                        </a>
+
+                        <a href="{{ url_for('pedidos.pedidos_editar', id=pedido.id) }}"
+                           class="btn btn-sm btn-primary">
+                            Editar
+                        </a>
+
+                        <form action="{{ url_for('pedidos.pedidos_excluir', id=pedido.id) }}"
+                        method="POST"
+                        style="display:inline;"
+                        onsubmit="return confirm('Deseja realmente excluir este pedido?');">
+
+                        <button type="submit" class="btn btn-sm btn-danger">
+                        Excluir
+            </button>
+        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="10" class="text-center">
+                    Nenhum pedido encontrado.
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<!-- ================= EXPORT CSV ================= -->
+<script>
+function exportCSV() {
+    const tabela = document.querySelector("table");
+    if (!tabela) return;
+
+    const linhas = tabela.querySelectorAll("tr");
+    let csv = [];
+    let totalFinal = 0;
+
+    const ths = tabela.querySelectorAll("thead th");
+    const totalIndex = [...ths].findIndex(th =>
+        th.innerText.toLowerCase().includes("total final")
+    );
+
+    linhas.forEach((tr, rowIndex) => {
+        const cols = tr.querySelectorAll("th, td");
+        let row = [];
+
+        cols.forEach((td, colIndex) => {
+            let texto = td.innerText
+                .replace(/\r?\n|\r/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+
+            if (colIndex === totalIndex && rowIndex > 0) {
+                let num = parseFloat(
+                    texto.replace("R$", "")
+                         .replace(",", ".")
+                         .replace(/[^0-9.]/g, "")
+                );
+
+                if (!isNaN(num)) {
+                    totalFinal += num;
+                    row.push(num.toFixed(2).replace(".", ","));
+                } else {
+                    row.push("");
+                }
+            } else {
+                row.push('"' + texto.replace(/"/g, "'") + '"');
+            }
+        });
+
+        csv.push(row.join(";"));
+    });
+
+    csv.push("");
+    csv.push(`TOTAL FINAL;${totalFinal.toFixed(2).replace(".", ",")}`);
+
+    // ✅ BOM UTF-8 (corrige acentuação no Excel)
+    const csvContent = "\uFEFF" + csv.join("\n");
+
+    const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;"
+    });
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "pedidos_filtrados.csv";
+    link.click();
+}
+</script>
+
+{% endblock %}

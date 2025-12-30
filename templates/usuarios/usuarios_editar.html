@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Editar Usuário</h2>
+
+<form method="POST">
+
+    <div class="mb-3">
+        <label class="form-label">Nome</label>
+        <input type="text"
+               name="nome"
+               class="form-control"
+               value="{{ usuario[1] }}"
+               required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email"
+               name="email"
+               class="form-control"
+               value="{{ usuario[2] }}"
+               required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Perfil</label>
+        <select name="perfil_id" class="form-select" required>
+            <option value="1" {% if usuario[3] == 1 %}selected{% endif %}>
+                Administrador
+            </option>
+            <option value="2" {% if usuario[3] == 2 %}selected{% endif %}>
+                Usuário
+            </option>
+            <option value="3" {% if usuario[3] == 3 %}selected{% endif %}>
+                Usuário Avançado
+            </option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Status</label>
+        <select name="ativo" class="form-select">
+            <option value="1" {% if usuario[4] == 1 %}selected{% endif %}>
+                Ativo
+            </option>
+            <option value="0" {% if usuario[4] == 0 %}selected{% endif %}>
+                Inativo
+            </option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Salvar</button>
+    <a href="{{ url_for('usuarios.usuarios_listar') }}" class="btn btn-secondary">
+        Voltar
+    </a>
+
+</form>
+
+{% endblock %}
