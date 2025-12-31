@@ -54,6 +54,7 @@ def proteger_rotas():
     rotas_livres = (
         "usuarios.login",
         "usuarios.alterar_senha",
+        "usuarios.primeiro_usuario",
     )
 
     rota_atual = request.endpoint

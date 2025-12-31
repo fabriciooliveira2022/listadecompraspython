@@ -306,3 +306,48 @@ def usuarios_excluir(id):
 
     flash("Usuário excluído com sucesso!", "success")
     return redirect(url_for("usuarios.usuarios_listar"))
+
+# ============== PRIMEIRO USUÁRIO - TELA LOGIN ================
+@usuarios_bp.route("/primeiro-usuario", methods=["GET", "POST"])
+def primeiro_usuario():
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, nome FROM dbo.Perfis ORDER BY nome")
+        perfis = cursor.fetchall()
+
+    if request.method == "POST":
+        nome = request.form["nome"]
+        email = request.form["email"]
+        senha = request.form["senha"]
+        senha2 = request.form["senha2"]
+        perfil = int(request.form.get("perfil_id", 2))
+
+        if senha != senha2 or len(senha) < 6:
+            flash("Senha inválida.", "danger")
+            return redirect(url_for("usuarios.primeiro_usuario"))
+
+        with get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Impede email duplicado
+            cursor.execute("SELECT id FROM dbo.Usuarios WHERE email=?", (email,))
+            if cursor.fetchone():
+                flash("Email já cadastrado.", "danger")
+                return redirect(url_for("usuarios.primeiro_usuario"))
+
+            cursor.execute("""
+                INSERT INTO dbo.Usuarios
+                (nome, email, senha_hash, ativo, perfil_id)
+                VALUES (?, ?, ?, 1, ?)
+            """, (
+                nome,
+                email,
+                generate_password_hash(senha),
+                perfil))
+            
+            conn.commit()
+
+        flash("Usuário criado com sucesso.", "success")
+        return redirect(url_for("usuarios.login"))
+
+    return render_template("usuarios/primeiro_usuario.html", perfis=perfis)
